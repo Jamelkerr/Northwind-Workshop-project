@@ -1,36 +1,122 @@
-<!-- products.html (Product Search Page) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Search</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Northwind Grocery</title>
 </head>
 <body>
-    <header>
-        <h1>Product Search</h1>
-    </header>
-    <nav>
-        <ul>
-            <li>
-                <select id="searchOptions">
-                    <option value="viewAll">View All</option>
-                    <option value="searchByCategory">Search by Category</option>
-                </select>
-            </li>
-            <li id="categoryDropdown" style="display:none;">
-                <select id="categoryOptions"></select>
-            </li>
-        </ul>
-    </nav>
-    <main id="productList">
-        <!-- Product list will be displayed here -->
-    </main>
-    <footer>
-        <p>&copy; 2024 Northwind Grocery jamel kerr</p>
-    </footer>
+    <h1>Welcome to Northwind Grocery</h1>
+    <div>
+        <label for="searchOptions">Select Search Option:</label>
+        <select id="searchOptions">
+            <option value="viewAll">View All</option>
+            <option value="searchByCategory">Search by Category</option>
+        </select>
+    </div>
+    <div id="categoryDropdown" style="display: none;">
+        <label for="categoryOptions">Select Category:</label>
+        <select id="categoryOptions"></select>
+    </div>
+    <div id="productList"></div>
 
-    <script src="script1.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const searchOptions = document.getElementById("searchOptions");
+            const categoryDropdown = document.getElementById("categoryDropdown");
+            const categoryOptions = document.getElementById("categoryOptions");
+            const productList = document.getElementById("productList");
+
+            // Event listener for search options dropdown
+            searchOptions.addEventListener("change", function () {
+                if (searchOptions.value === "searchByCategory") {
+                    categoryDropdown.style.display = "inline";
+                    fetchCategories();
+                } else if (searchOptions.value === "viewAll") {
+                    categoryDropdown.style.display = "none";
+                    fetchAllProducts();
+                }
+            });
+
+            // Event listener for category dropdown
+            categoryOptions.addEventListener("change", function () {
+                const categoryName = categoryOptions.value;
+                if (categoryName) {
+                    fetchProductsByCategory(categoryName);
+                } else {
+                    fetchAllProducts();
+                }
+            });
+
+            // Fetch all categories from the backend API
+            function fetchCategories() {
+                fetch("http://localhost:8081/api/categories")
+                    .then(response => response.json())
+                    .then(categories => {
+                        // Sort categories by categoryId
+                        categories.sort((a, b) => a.categoryId - b.categoryId);
+
+                        // Populate category dropdown
+                        categoryOptions.innerHTML = "<option value=''>Select Category...</option>";
+                        categories.forEach(category => {
+                            categoryOptions.innerHTML += `<option value="${category.name}">${category.name}</option>`;
+                        });
+                    })
+                    .catch(error => console.error("Error fetching categories:", error));
+            }
+
+            // Fetch all products 
+            function fetchAllProducts() {
+                fetch("http://localhost:8081/api/products")
+                    .then(response => response.json())
+                    .then(products => {
+                        // Sort products by name
+                        products.sort((a, b) => a.productName.localeCompare(b.productName));
+                        // Display products
+                        renderProducts(products);
+                    })
+                    .catch(error => console.error("Error fetching products:", error));
+            }
+
+            // Fetch products by category 
+            function fetchProductsByCategory(categoryName) {
+                fetch("http://localhost:8081/api/products")
+                    .then(response => response.json())
+                    .then(products => {
+                        const filteredProducts = products.filter(product => product.categoryName === categoryName);
+                        // Sort products by categoryId and then by name
+                        filteredProducts.sort((a, b) => {
+                            // First, sort by categoryId
+                            if (a.categoryId !== b.categoryId) {
+                                return a.categoryId - b.categoryId;
+                            }
+                            // If categoryId is the same, sort by name
+                            return a.productName.localeCompare(b.productName);
+                        });
+                        renderProducts(filteredProducts);
+                    })
+                    .catch(error => console.error("Error fetching products by category:", error));
+            }
+
+            // Render products
+            function renderProducts(products) {
+                productList.innerHTML = ""; // Clear previous content
+                products.forEach(product => {
+                    productList.innerHTML += `
+                        <div>
+                            <p>ID: ${product.productId}</p>
+                            <p>Name: ${product.productName}</p>
+                            <p>Price: $${product.unitPrice}</p>
+                            <p>Category ID: ${product.categoryId}</p>
+                            <a href="product-details.html?id=${product.productId}">See Details</a>
+                        </div>
+                    `;
+                });
+            }
+            
+            // Initial fetch of all products when the page loads
+            fetchAllProducts();
+        });
+    </script>
 </body>
 </html>
